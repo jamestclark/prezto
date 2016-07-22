@@ -49,12 +49,15 @@ export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
 
 #GPG Agent
-if [[ $(uname) == Darwin ]]; then
-  if [ -f "${HOME}/.gpg-agent-info" ]; then
-    . "${HOME}/.gpg-agent-info"
-    export GPG_AGENT_INFO
-    export SSH_AUTH_SOCK
-  fi
+# Invoke GnuPG-Agent the first time we login.
+# Does `~/.gpg-agent-info' exist and points to gpg-agent process accepting signals?
+[ -f ~/.gnupg/gpg-agent.env ] && source ~/.gnupg/gpg-agent.env
+if [ -S "${GPG_AGENT_INFO%%:*}" ]; then
+  echo "Configuring running GPG"
+  export GPG_AGENT_INFO
+  export GPG_TTY=`tty`
+  export SSH_AUTH_SOCK
+else
+  echo "Starting GPG Agent..."
+  eval $(gpg-agent --daemon --log-file /tmp/gpg.log --no-grab --enable-ssh-support --write-env-file ~/.gnupg/gpg-agent.env)
 fi
-
-export GPG_TTY=$(tty)
